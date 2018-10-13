@@ -45,17 +45,17 @@ public class OptionPriceChangeRequester {
         Product product = productRepository.findById(request.getProductId());
 
         if (product == null) {
-            requestFailHandler.send(request, NOT_FOUND_PRODUCT);
+            requestFailHandler.handle(request, NOT_FOUND_PRODUCT);
             return false;
         }
 
         if (product.getStatus() != ProductStatus.LIVED) {
-            requestFailHandler.send(request, ILLEGAL_STATUS_PRODUCT);
+            requestFailHandler.handle(request, ILLEGAL_STATUS_PRODUCT);
             return false;
         }
 
         if (CollectionUtils.isEmpty(request.getOptions())) {
-            requestFailHandler.send(request, OPTION_IS_EMPTY);
+            requestFailHandler.handle(request, OPTION_IS_EMPTY);
             return false;
         }
         // 설계 자체에 대한 잘 잘못을 가리기도 힘듬 어디서 부터 어떻게 시작해야하나 ?
@@ -83,17 +83,17 @@ public class OptionPriceChangeRequester {
                 if (option.getProductId().equals(product.getId())) {
                     if (option.getPrice() != map.get(option.getId()).getBefore()) {
                         unqualifiedOptionIds.add(option.getId());
-                        requestFailHandler.send(request, requestedOptionId, ILLEGAL_BEFORE_VALUE);
+                        requestFailHandler.handle(request, requestedOptionId, ILLEGAL_BEFORE_VALUE);
                     } else {
                         qualifiedOptions.add(option);
                     }
                 } else {
                     unqualifiedOptionIds.add(option.getId());
-                    requestFailHandler.send(request, requestedOptionId, ILLEGAL_OPTION_PRODUCT_ID);
+                    requestFailHandler.handle(request, requestedOptionId, ILLEGAL_OPTION_PRODUCT_ID);
                 }
             } else {
                 unqualifiedOptionIds.add(requestedOptionId);
-                requestFailHandler.send(request, requestedOptionId, NOT_FOUND_OPTION);
+                requestFailHandler.handle(request, requestedOptionId, NOT_FOUND_OPTION);
             }
         }
 
