@@ -8,7 +8,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.example.demo.ProductStatus.LIVED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -28,8 +29,7 @@ public class OptionPriceChangeRequesterTest {
     @Mock private RequestFailHandler requestFailHandler;
     @Mock private RequestHistoryRepository requestHistoryRepository;
 
-    Product product;
-    List<Option> options;
+    private ProductEnv productEnv;
 
     @Before
     public void setUp()  {
@@ -41,13 +41,21 @@ public class OptionPriceChangeRequesterTest {
                 requestFailHandler
         );
 
-        product = product(1L, LIVED);
-        options = options(
-                option(1L, 8L, 1000),
-                option(1L, 9L, 3000));
+        //이렇게 까지 노력 할 필요가 머있을까?
+        productEnv = initProduct(
+                1L,
+                LIVED,
+                option(8L, 1000),
+                option(9L, 3000));
 
-        given(productRepository.findById(1L)).willReturn(product);
-        given(optionRepository.findByOptionIdIn(anyListOf(Long.class))).willReturn(options);
+        given(productRepository.findById(1L)).willReturn(productEnv.getProduct());
+        given(optionRepository.findByOptionIdIn(anyListOf(Long.class))).willReturn(productEnv.getOptions());
+    }
+
+    private ProductEnv initProduct(long productId, ProductStatus status, Function<Long,Option> ... foptions) {
+        return new ProductEnv(
+                product(productId,status),
+                Arrays.stream(foptions).map(f -> f.apply(productId)).collect(Collectors.toList()));
     }
 
     @Test
@@ -60,12 +68,12 @@ public class OptionPriceChangeRequesterTest {
 
         assertThat(optionPriceChangeRequester.send(request)).isTrue();
 
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.REQUEST);
+        assertThat(productEnv.getProduct().getStatus()).isEqualTo(ProductStatus.REQUEST);
         assertThat(option(1L, 8L).getPrice()).isEqualTo(2000L);
         assertThat(option(1L, 9L).getPrice()).isEqualTo(4000L);
 
         verify(requestSuccessHandler).handle(request);
-        verify(productRepository).save(product);
+        verify(productRepository).save(productEnv.getProduct());
         verify(optionRepository).save(option(1L, 8L));
         verify(optionRepository).save(option(1L, 9L));
         verify(requestHistoryRepository).save(request);
@@ -74,16 +82,16 @@ public class OptionPriceChangeRequesterTest {
     }
 
     private Option option(Long productId, Long optionId) {
-        return options.stream().filter(it-> it.getProductId().equals(productId) && it.getId().equals(optionId)).findFirst().orElse(null);
+        return productEnv.getOptions().stream().filter(it-> it.getProductId().equals(productId) && it.getId().equals(optionId)).findFirst().orElse(null);
     }
 
-    private List<Option> options(Option ... option) {
-        return new ArrayList<>(Arrays.asList(option));
+    private Function<Long, Option> option(Long optionId, int price) {
+        return (productId) -> option(productId, optionId, price);
     }
 
-    private Option option(Long productId, Long id, int price) {
+    private Option option(Long productId, Long optionId, int price) {
         Option option1 = new Option();
-        option1.setId(id);
+        option1.setId(optionId);
         option1.setProductId(productId);
         option1.setPrice(price);
         return option1;
