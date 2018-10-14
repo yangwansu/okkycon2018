@@ -10,7 +10,9 @@ import static com.example.demo.ProductEnv.option;
 import static com.example.demo.ProductStatus.LIVED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -37,7 +39,6 @@ public class OptionPriceChangeRequesterTest {
                 requestFailHandler
         );
 
-        //이렇게 까지 노력 할 필요가 머있을까?
         productEnv = ProductEnv.initRequest(
                 1L,
                 LIVED,
@@ -57,9 +58,6 @@ public class OptionPriceChangeRequesterTest {
 
         assertThat(dut.send(request)).isTrue();
 
-        verify(requestSuccessHandler).handle(request);
-        verifyNoMoreInteractions(requestFailHandler);
-
         assertThat(productEnv.getProduct().getStatus()).isEqualTo(ProductStatus.REQUEST);
         assertThat(productEnv.option(1L, 8L).getPrice()).isEqualTo(2000L);
         assertThat(productEnv.option(1L, 9L).getPrice()).isEqualTo(4000L);
@@ -70,4 +68,29 @@ public class OptionPriceChangeRequesterTest {
         verify(requestHistoryRepository).save(request);
 
     }
+
+    @Test
+    public void when_request_is_success() {
+        OptionPriceChangeRequest request = productEnv.initRequest()
+                .changePrice(8L, 2000)
+                .changePrice(9L, 4000)
+                .build();
+
+        assertThat(dut.send(request)).isTrue();
+
+        verify(requestSuccessHandler).handle(request);
+        verifyNoMoreInteractions(requestFailHandler);
+    }
+
+    @Test
+    public void when_request_is_fail() {
+        OptionPriceChangeRequest request = productEnv.initRequest()
+                .build();
+
+        assertThat(dut.send(request)).isFalse();
+
+        verifyNoMoreInteractions(requestSuccessHandler);
+        verify(requestFailHandler).handle(eq(request), any(RequestFailReasons.class));
+    }
+
 }
