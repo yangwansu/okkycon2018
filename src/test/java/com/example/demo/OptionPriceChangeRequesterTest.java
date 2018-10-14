@@ -17,7 +17,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 @RunWith(MockitoJUnitRunner.class)
 public class OptionPriceChangeRequesterTest {
 
-    private OptionPriceChangeRequester optionPriceChangeRequester;
+    private OptionPriceChangeRequester dut;
 
     @Mock private ProductRepository productRepository;
     @Mock private OptionRepository optionRepository;
@@ -29,7 +29,7 @@ public class OptionPriceChangeRequesterTest {
 
     @Before
     public void setUp()  {
-        optionPriceChangeRequester = new OptionPriceChangeRequester(
+        dut = new OptionPriceChangeRequester(
                 productRepository,
                 optionRepository,
                 requestHistoryRepository,
@@ -55,18 +55,19 @@ public class OptionPriceChangeRequesterTest {
                 .changePrice(9L, 4000)
                 .build();
 
-        assertThat(optionPriceChangeRequester.send(request)).isTrue();
+        assertThat(dut.send(request)).isTrue();
+
+        verify(requestSuccessHandler).handle(request);
+        verifyNoMoreInteractions(requestFailHandler);
 
         assertThat(productEnv.getProduct().getStatus()).isEqualTo(ProductStatus.REQUEST);
         assertThat(productEnv.option(1L, 8L).getPrice()).isEqualTo(2000L);
         assertThat(productEnv.option(1L, 9L).getPrice()).isEqualTo(4000L);
 
-        verify(requestSuccessHandler).handle(request);
         verify(productRepository).save(productEnv.getProduct());
         verify(optionRepository).save(productEnv.option(1L, 8L));
         verify(optionRepository).save(productEnv.option(1L, 9L));
         verify(requestHistoryRepository).save(request);
 
-        verifyNoMoreInteractions(requestFailHandler);
     }
 }
