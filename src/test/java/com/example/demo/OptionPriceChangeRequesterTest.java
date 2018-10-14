@@ -6,13 +6,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.example.demo.ProductEnv.option;
-import static com.example.demo.ProductStatus.LIVED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -21,76 +16,32 @@ public class OptionPriceChangeRequesterTest {
 
     private OptionPriceChangeRequester dut;
 
-    @Mock private ProductRepository productRepository;
-    @Mock private OptionRepository optionRepository;
+    @Mock private OptionPriceChangeRequestApplier optionPriceChangeRequestApplier;
     @Mock private RequestSuccessHandler requestSuccessHandler;
-    @Mock private RequestFailHandler requestFailHandler;
-    @Mock private RequestHistoryRepository requestHistoryRepository;
-
-    private ProductEnv productEnv;
-
+    @Mock private OptionPriceChangeRequest request;
     @Before
     public void setUp()  {
+
         dut = new OptionPriceChangeRequester(
-                productRepository,
-                optionRepository,
-                requestHistoryRepository,
-                requestSuccessHandler,
-                requestFailHandler
+                optionPriceChangeRequestApplier,
+                requestSuccessHandler
         );
-
-        productEnv = ProductEnv.initRequest(
-                1L,
-                LIVED,
-                option(8L, 1000),
-                option(9L, 3000));
-
-        given(productRepository.findById(1L)).willReturn(productEnv.getProduct());
-        given(optionRepository.findByOptionIdIn(anyListOf(Long.class))).willReturn(productEnv.getOptions());
-    }
-
-    @Test
-    public void testSend() {
-        OptionPriceChangeRequest request = productEnv.initRequest()
-                .changePrice(8L, 2000)
-                .changePrice(9L, 4000)
-                .build();
-
-        assertThat(dut.send(request)).isTrue();
-
-        assertThat(productEnv.getProduct().getStatus()).isEqualTo(ProductStatus.REQUEST);
-        assertThat(productEnv.option(1L, 8L).getPrice()).isEqualTo(2000L);
-        assertThat(productEnv.option(1L, 9L).getPrice()).isEqualTo(4000L);
-
-        verify(productRepository).save(productEnv.getProduct());
-        verify(optionRepository).save(productEnv.option(1L, 8L));
-        verify(optionRepository).save(productEnv.option(1L, 9L));
-        verify(requestHistoryRepository).save(request);
-
     }
 
     @Test
     public void when_request_is_success() {
-        OptionPriceChangeRequest request = productEnv.initRequest()
-                .changePrice(8L, 2000)
-                .changePrice(9L, 4000)
-                .build();
+        given(optionPriceChangeRequestApplier.save(request)).willReturn(true);
 
         assertThat(dut.send(request)).isTrue();
-
         verify(requestSuccessHandler).handle(request);
-        verifyNoMoreInteractions(requestFailHandler);
     }
 
     @Test
     public void when_request_is_fail() {
-        OptionPriceChangeRequest request = productEnv.initRequest()
-                .build();
+        given(optionPriceChangeRequestApplier.save(request)).willReturn(false);
 
         assertThat(dut.send(request)).isFalse();
-
         verifyNoMoreInteractions(requestSuccessHandler);
-        verify(requestFailHandler).handle(eq(request), any(RequestFailReasons.class));
     }
 
 }
