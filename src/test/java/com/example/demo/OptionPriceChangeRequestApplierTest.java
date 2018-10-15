@@ -8,11 +8,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import static com.example.demo.ProductEnv.option;
 import static com.example.demo.ProductStatus.LIVED;
+import static com.example.demo.RequestFailReasons.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(MockitoJUnitRunner.class)
 public class OptionPriceChangeRequestApplierTest {
@@ -57,8 +57,6 @@ public class OptionPriceChangeRequestApplierTest {
 
         assertThat(dut.save(request)).isTrue();
 
-        verifyNoMoreInteractions(requestFailHandler);
-
         assertThat(productEnv.getProduct().getStatus()).isEqualTo(ProductStatus.REQUEST);
         assertThat(productEnv.option(1L, 8L).getPrice()).isEqualTo(2000L);
         assertThat(productEnv.option(1L, 9L).getPrice()).isEqualTo(4000L);
@@ -68,5 +66,4 @@ public class OptionPriceChangeRequestApplierTest {
         verify(optionRepository).save(productEnv.option(1L, 9L));
         verify(requestHistoryRepository).save(request);
     }
-
 }

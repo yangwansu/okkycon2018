@@ -2,6 +2,7 @@ package com.example.demo;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +27,11 @@ public class OptionPriceChangeRequestBuilder {
     }
 
     public OptionPriceChangeRequest build() {
-        List<RequestOption> aaa = changes.stream().map(it -> change(it.optionId, productEnv.option(productEnv.getProduct().getId(), it.optionId).getPrice(), it.changePrice)).collect(Collectors.toList());
+        List<RequestOption> aaa = changes.stream().map(it -> {
+            long before = Optional.ofNullable(productEnv.option(productEnv.getProduct().getId(), it.optionId)).map(Option::getPrice).orElse(0L);
+
+            return change(it.optionId, before, it.changePrice);
+        }).collect(Collectors.toList());
         return request(productEnv.getProduct().getId(), aaa);
     }
 

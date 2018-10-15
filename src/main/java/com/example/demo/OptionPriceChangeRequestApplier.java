@@ -22,6 +22,10 @@ public class OptionPriceChangeRequestApplier {
 
     public boolean save(OptionPriceChangeRequest request) {
 
+        if(request == null ){
+            requestFailHandler.handle(request, REQUEST_MUST_BE_NOT_NULL);
+            return false;
+        }
         Product product = productRepository.findById(request.getProductId());
 
         if (product == null) {
