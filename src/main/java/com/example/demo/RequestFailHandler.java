@@ -5,6 +5,5 @@ package com.example.demo;
  */
 public interface RequestFailHandler {
 
-    void handle(OptionPriceChangeRequest request, RequestFailReasons fail);
-    void handle(OptionPriceChangeRequest request, long optionId, RequestFailReasons fail);
+    void handle(OptionPriceChangeRequest request, OptionPriceChangeResponse response);
 }

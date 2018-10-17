@@ -8,7 +8,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import static com.example.demo.ProductEnv.option;
 import static com.example.demo.ProductStatus.LIVED;
-import static com.example.demo.RequestFailReasons.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Matchers.anyListOf;
@@ -19,7 +18,6 @@ public class OptionPriceChangeRequestApplierTest {
 
     @Mock private ProductRepository productRepository;
     @Mock private OptionRepository optionRepository;
-    @Mock private RequestFailHandler requestFailHandler;
     @Mock private RequestHistoryRepository requestHistoryRepository;
 
     private OptionPriceChangeRequestApplier dut;
@@ -32,8 +30,7 @@ public class OptionPriceChangeRequestApplierTest {
         dut = new OptionPriceChangeRequestApplier(
                 productRepository,
                 optionRepository,
-                requestHistoryRepository,
-                requestFailHandler);
+                requestHistoryRepository);
 
         //이렇게 까지 노력 할 필요가 머있을까?
         productEnv = ProductEnv.initRequest(
@@ -55,7 +52,7 @@ public class OptionPriceChangeRequestApplierTest {
                 .changePrice(9L, 4000)
                 .build();
 
-        assertThat(dut.save(request)).isTrue();
+        assertThat(!dut.save(request).hasFails()).isTrue();
 
         assertThat(productEnv.getProduct().getStatus()).isEqualTo(ProductStatus.REQUEST);
         assertThat(productEnv.option(1L, 8L).getPrice()).isEqualTo(2000L);

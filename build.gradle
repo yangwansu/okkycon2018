@@ -22,6 +22,7 @@ repositories {
 dependencies {
 	compile 'org.projectlombok:lombok:1.16.18'
 	compile 'commons-collections:commons-collections:3.2'
+	compile 'org.apache.commons:commons-lang3:3.4'
 	compile 'com.google.guava:guava:19.0'
 
 	testCompile 'junit:junit:4.8.2'
